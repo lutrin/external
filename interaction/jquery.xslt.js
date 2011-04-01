@@ -73,6 +73,7 @@
             $.fn.xslt = function(xml, xslt, callback) {
                 var target = $(this);
                 var transformed = false;
+                var xmlStr = false;
 
                 var xm = {
                     readyState: 4
@@ -83,12 +84,16 @@
 
                 var change = function() {
                     if (xm.readyState == 4 && xs.readyState == 4  && !transformed) {
-                        var processor = new XSLTProcessor();
+                        var processor = new XSLTProcessor(), html;
                         if ($.isFunction(processor.transformDocument)) {
                             // obsolete Mozilla interface
                             resultDoc = document.implementation.createDocument("", "", null);
                             processor.transformDocument(xm.responseXML, xs.responseXML, resultDoc, null);
-                            target.html(new XMLSerializer().serializeToString(resultDoc));
+                            html = new XMLSerializer().serializeToString(resultDoc);
+                            if( xmlStr ) {
+                              html = html.replace( /&amp;/g, "&" );
+                            }
+                            target.html(html);
                         }
                         else {
                             processor.importStylesheet(xs.responseXML);
@@ -101,10 +106,11 @@
                 };
 
                 if (str.test(xml)) {
-                    xm.responseXML = new DOMParser().parseFromString(xml, "text/xml");
+                    xm.responseXML = new DOMParser().parseFromString(xml.replace( /\&/g, "&amp;" ), "text/xml");
+                    xmlStr = true;
                 }
                 else {
-                    xm = $.ajax({ dataType: "xml", url: xml});
+                    xm = $.ajax({ dataType: "xml", url: xml});;
                     xm.onreadystatechange = change;
                 }
 
